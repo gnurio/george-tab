@@ -56,7 +56,8 @@
     "tabs",
     "history",
     "identity",
-    "notifications"
+    "notifications",
+    "https://api.openai.com/*"
   ],
   "homepage_url": "https://github.com/cnwangjie/better-onetab",
   "oauth2": {

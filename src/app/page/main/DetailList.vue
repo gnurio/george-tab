@@ -1,263 +1,339 @@
 <template>
 <div>
 
-<div class="text-xs-center" v-if="pageLength > 1">
-  <v-pagination
-    :value="currentPage"
-    @input="changePage"
-    :length="pageLength"
-    circle
-  ></v-pagination>
-</div>
+  <v-layout align-center justify-space-between class="mb-3 list-controls">
+    <v-switch
+      v-model="groupByDomain"
+      :label="__('ui_group_by_domain')"
+      class="ma-0"
+    ></v-switch>
+  </v-layout>
 
-<v-expansion-panel
-  ref="panel" expand popout
-  :readonly="opts.disableExpansion"
-  :value="expandStatus"
-  @input="expandStatusChanged"
-  class="my-3"
->
-  <v-expansion-panel-content
-    v-for="list in listsInView"
-    hide-actions
-    class="tab-list"
-    :key="list.index"
-    ref="list"
-  >
-    <v-layout slot="header" row spacer>
-      <v-flex no-wrap xs10>
+  <v-layout row wrap class="detail-layout">
+    <v-flex xs12 md9>
+      <template v-if="!groupByDomain">
+        <div class="text-xs-center" v-if="pageLength > 1">
+          <v-pagination
+            :value="currentPage"
+            @input="changePage"
+            :length="pageLength"
+            circle
+          ></v-pagination>
+        </div>
 
-        <v-menu open-on-hover top offset-y>
-          <v-chip
-            slot="activator"
-            label
-            small
-            :color="list.color"
-            class="lighten-3"
-          >{{ list.tabs.length }} {{ __('ui_tab') }}</v-chip>
-          <v-card>
-            <v-layout wrap class="color-panel">
-              <v-flex wrap xs3 v-for="(color, colorIndex) in colorList" :key="colorIndex">
+        <v-expansion-panel
+          ref="panel" expand popout
+          :readonly="opts.disableExpansion"
+          :value="expandStatus"
+          @input="expandStatusChanged"
+          class="my-3"
+        >
+          <v-expansion-panel-content
+            v-for="list in listsInView"
+            hide-actions
+            class="tab-list"
+            :key="list.index"
+            ref="list"
+          >
+            <v-layout slot="header" row spacer>
+              <v-flex no-wrap xs10>
+
+                <v-menu open-on-hover top offset-y>
+                  <v-chip
+                    slot="activator"
+                    label
+                    small
+                    :color="list.color"
+                    class="lighten-3"
+                  >{{ list.tabs.length }} {{ __('ui_tab') }}</v-chip>
+                  <v-card>
+                    <v-layout wrap class="color-panel">
+                      <v-flex wrap xs3 v-for="(color, colorIndex) in colorList" :key="colorIndex">
+                        <div
+                          class="color-selector lighten-3"
+                          :class="color"
+                          @click.stop="changeColor([list.index, color])"
+                        ></div>
+                      </v-flex>
+                    </v-layout>
+                  </v-card>
+                </v-menu>
+                <strong class="grey--text date">{{ __('ui_created') }} <dynamic-time v-model="list.time"></dynamic-time></strong>
+                <v-chip v-for="tag in list.tags" :color="getColorByHash(tag)" class="lighten-3" :key="tag" label small>
+                  {{ tag }}
+                </v-chip>
+                <v-text-field
+                  @keydown.enter="saveTitle(list.index)"
+                  @blur="saveTitle(list.index)"
+                  class="title-editor"
+                  autofocus
+                  v-if="list.titleEditing"
+                  full-width
+                  @click.prevent.stop
+                  :value="list.title"
+                  @input="setTitle([list.index, $event])"
+                  single-line
+                  hide-details
+                  :class="'font-size-' + opts.titleFontSize"
+                ></v-text-field>
                 <div
-                  class="color-selector lighten-3"
-                  :class="color"
-                  @click.stop="changeColor([list.index, color])"
-                ></div>
+                  class="list-title"
+                  v-else
+                  :class="[
+                    'font-size-' + opts.titleFontSize,
+                    list.color ? list.color + '--text' : '',
+                  ]"
+                >{{ list.title }}</div>
+              </v-flex>
+              <v-flex xs2 class="text-xs-right">
+                <v-btn
+                  :title="__('ui_title_down_btn')"
+                  @click.stop="moveListDown(list.index)"
+                  flat icon class="icon-in-title"
+                  v-if="$route.name === 'detailList'"
+                  :disabled="list.index === lists.length - 1"
+                >
+                  <v-icon color="gray" :style="{fontSize: '14px'}">fas fa-arrow-down</v-icon>
+                </v-btn>
+                <v-btn
+                  :title="__('ui_title_up_btn')"
+                  @click.stop="moveListUp(list.index)"
+                  flat icon class="icon-in-title"
+                  v-if="$route.name === 'detailList'"
+                  :disabled="list.index === 0"
+                >
+                  <v-icon color="gray" :style="{fontSize: '14px'}">fas fa-arrow-up</v-icon>
+                </v-btn>
+                <v-btn
+                  :title="__('ui_title_pin_btn')"
+                  @click.stop="pinList([list.index, !list.pinned])"
+                  flat icon class="icon-in-title"
+                >
+                  <v-icon :color="list.pinned ? 'blue' : 'gray'" :style="{fontSize: '14px'}">fas fa-thumbtack</v-icon>
+                </v-btn>
               </v-flex>
             </v-layout>
-          </v-card>
-        </v-menu>
-        <strong class="grey--text date">{{ __('ui_created') }} <dynamic-time v-model="list.time"></dynamic-time></strong>
-        <v-chip v-for="tag in list.tags" :color="getColorByHash(tag)" class="lighten-3" :key="tag" label small>
-          {{ tag }}
-        </v-chip>
-        <v-text-field
-          @keydown.enter="saveTitle(list.index)"
-          @blur="saveTitle(list.index)"
-          class="title-editor"
-          autofocus
-          v-if="list.titleEditing"
-          full-width
-          @click.prevent.stop
-          :value="list.title"
-          @input="setTitle([list.index, $event])"
-          single-line
-          hide-details
-          :class="'font-size-' + opts.titleFontSize"
-        ></v-text-field>
-        <div
-          class="list-title"
-          v-else
-          :class="[
-            'font-size-' + opts.titleFontSize,
-            list.color ? list.color + '--text' : '',
-          ]"
-        >{{ list.title }}</div>
-      </v-flex>
-      <v-flex xs2 class="text-xs-right">
-        <v-btn
-          :title="__('ui_title_down_btn')"
-          @click.stop="moveListDown(list.index)"
-          flat icon class="icon-in-title"
-          v-if="$route.name === 'detailList'"
-          :disabled="list.index === lists.length - 1"
-        >
-          <v-icon color="gray" :style="{fontSize: '14px'}">fas fa-arrow-down</v-icon>
-        </v-btn>
-        <v-btn
-          :title="__('ui_title_up_btn')"
-          @click.stop="moveListUp(list.index)"
-          flat icon class="icon-in-title"
-          v-if="$route.name === 'detailList'"
-          :disabled="list.index === 0"
-        >
-          <v-icon color="gray" :style="{fontSize: '14px'}">fas fa-arrow-up</v-icon>
-        </v-btn>
-        <v-btn
-          :title="__('ui_title_pin_btn')"
-          @click.stop="pinList([list.index, !list.pinned])"
-          flat icon class="icon-in-title"
-        >
-          <v-icon :color="list.pinned ? 'blue' : 'gray'" :style="{fontSize: '14px'}">fas fa-thumbtack</v-icon>
-        </v-btn>
-      </v-flex>
-    </v-layout>
-    <v-card>
-      <v-layout>
-        <v-flex class="checkbox-column">
-          <v-checkbox
-            hide-details
-            class="checkbox"
-            :value="list.tabs.some(tab => tab.selected)"
-            @click.self.stop="selectAllBtnClicked(list.index)"
-            :indeterminate="list.tabs.some(tab => tab.selected) && list.tabs.some(tab => !tab.selected)"
-          ></v-checkbox>
-        </v-flex>
-        <v-flex>
-          <v-btn
-            :ref="'multi-op-' + list.index"
-            flat small v-on:click="multiOpBtnClicked(list.index, $event)"
-            icon :disabled="list.tabs.every(tab => !tab.selected)"
-          >
-            <v-icon>more_vert</v-icon>
-          </v-btn>
-          <v-btn flat small v-on:click="openChangeTitle(list.index)">{{ __('ui_retitle_list') }}</v-btn>
-          <v-btn flat small v-on:click="restoreList([list.index])">{{ __('ui_restore_all') }}</v-btn>
-          <v-btn flat small v-on:click="restoreList([list.index, true])">{{ __('ui_restore_all_in_new_window') }}</v-btn>
-          <v-btn flat small color="error" v-on:click="removeList(list.index)" :disabled="list.pinned">{{ __('ui_remove_list') }}</v-btn>
-          <v-btn flat small v-on:click="pinList([list.index, !list.pinned])">{{ list.pinned ? __('ui_unpin') : __('ui_pin') }} {{ __('ui_list') }}</v-btn>
-          <v-btn flat small v-on:click="editTag(list.index, $event)" :ref="'edit-tag-' + list.index">EDIT TAG</v-btn>
-        </v-flex>
-      </v-layout>
-      <v-divider></v-divider>
-      <v-list dense class="my-1">
-        <draggable
-          :value="list.tabs"
-          @input="setTabs([list.index, $event])"
-          :options="draggableOptions"
-          @change="tabMoved([list.index])"
-        >
-          <v-list-tile
-            v-for="(tab, tabIndex) in list.tabs"
-            :href="opts.itemClickAction !== 'none' ? tab.url : null"
-            :target="opts.itemClickAction !== 'none' ? '_blank' : null"
-            @click.stop="itemClicked([list.index, tabIndex])"
-            @contextmenu="rightClicked(list.index, tabIndex, $event)"
-            class="list-item"
-            :ref="'list-' + list.index + '-tab'"
-            :key="tabIndex"
-            v-if="tabIndex < 10 || list.showAll"
-          >
-            <div class="drag-indicator" @click.stop.prevent><i></i></div>
-            <v-list-tile-action>
-              <v-checkbox
-                hide-details
-                class="checkbox"
-                :value="tab.selected"
-                @click.prevent.stop.self="tabSelected([list.index, tabIndex, !tab.selected])"
-              ></v-checkbox>
-            </v-list-tile-action>
-            <v-list-tile-content>
-              <v-list-tile-title>
-                <v-avatar
-                  tile
-                  size="16"
-                  color="grey lighten-4"
-                  v-if="!opts.hideFavicon"
+            <v-card>
+              <v-layout>
+                <v-flex class="checkbox-column">
+                  <v-checkbox
+                    hide-details
+                    class="checkbox"
+                    :value="list.tabs.some(tab => tab.selected)"
+                    @click.self.stop="selectAllBtnClicked(list.index)"
+                    :indeterminate="list.tabs.some(tab => tab.selected) && list.tabs.some(tab => !tab.selected)"
+                  ></v-checkbox>
+                </v-flex>
+                <v-flex>
+                  <v-btn
+                    :ref="'multi-op-' + list.index"
+                    flat small v-on:click="multiOpBtnClicked(list.index, $event)"
+                    icon :disabled="list.tabs.every(tab => !tab.selected)"
+                  >
+                    <v-icon>more_vert</v-icon>
+                  </v-btn>
+                  <v-btn flat small v-on:click="openChangeTitle(list.index)">{{ __('ui_retitle_list') }}</v-btn>
+                  <v-btn flat small v-on:click="restoreList([list.index])">{{ __('ui_restore_all') }}</v-btn>
+                  <v-btn flat small v-on:click="restoreList([list.index, true])">{{ __('ui_restore_all_in_new_window') }}</v-btn>
+                  <v-btn flat small color="error" v-on:click="removeList(list.index)" :disabled="list.pinned">{{ __('ui_remove_list') }}</v-btn>
+                  <v-btn flat small v-on:click="pinList([list.index, !list.pinned])">{{ list.pinned ? __('ui_unpin') : __('ui_pin') }} {{ __('ui_list') }}</v-btn>
+                  <v-btn flat small v-on:click="editTag(list.index, $event)" :ref="'edit-tag-' + list.index">EDIT TAG</v-btn>
+                </v-flex>
+              </v-layout>
+              <v-divider></v-divider>
+              <v-list dense class="my-1">
+                <draggable
+                  :value="list.tabs"
+                  @input="setTabs([list.index, $event])"
+                  :options="draggableOptions"
+                  @change="tabMoved([list.index])"
                 >
-                  <img :src="tab.favIconUrl ? tab.favIconUrl : `https://www.google.com/s2/favicons?domain=${getDomain(tab.url)}`">
-                </v-avatar>
-                {{ opts.itemDisplay === 'url' ? tab.url : tab.title }}
-              </v-list-tile-title>
-              <v-list-tile-sub-title v-if="opts.itemDisplay === 'title-and-url'">
-                {{ tab.url }}
-              </v-list-tile-sub-title>
-            </v-list-tile-content>
-          </v-list-tile>
-          <v-layout v-if="list.tabs.length > 10 && !list.showAll">
-            <v-flex class="text-xs-center">
-              <v-btn small flat @click="showAll(list.index)"><v-icon>more_horiz</v-icon></v-btn>
-            </v-flex>
-          </v-layout>
-        </draggable>
-      </v-list>
-    </v-card>
-  </v-expansion-panel-content>
-</v-expansion-panel>
+                  <v-list-tile
+                    v-for="(tab, tabIndex) in list.tabs"
+                    :href="opts.itemClickAction !== 'none' ? tab.url : null"
+                    :target="opts.itemClickAction !== 'none' ? '_blank' : null"
+                    @click.stop="itemClicked([list.index, tabIndex])"
+                    @contextmenu="rightClicked(list.index, tabIndex, $event)"
+                    class="list-item"
+                    :ref="'list-' + list.index + '-tab'"
+                    :key="tabIndex"
+                    v-if="tabIndex < 10 || list.showAll"
+                  >
+                    <div class="drag-indicator" @click.stop.prevent><i></i></div>
+                    <v-list-tile-action>
+                      <v-checkbox
+                        hide-details
+                        class="checkbox"
+                        :value="tab.selected"
+                        @click.prevent.stop.self="tabSelected([list.index, tabIndex, !tab.selected])"
+                      ></v-checkbox>
+                    </v-list-tile-action>
+                    <v-list-tile-content>
+                      <v-list-tile-title>
+                        <v-avatar
+                          tile
+                          size="16"
+                          color="grey lighten-4"
+                          v-if="!opts.hideFavicon"
+                        >
+                          <img :src="tab.favIconUrl ? tab.favIconUrl : `https://www.google.com/s2/favicons?domain=${getDomain(tab.url)}`">
+                        </v-avatar>
+                        {{ opts.itemDisplay === 'url' ? tab.url : tab.title }}
+                      </v-list-tile-title>
+                      <v-list-tile-sub-title v-if="opts.itemDisplay === 'title-and-url'">
+                        {{ tab.url }}
+                      </v-list-tile-sub-title>
+                    </v-list-tile-content>
+                  </v-list-tile>
+                  <v-layout v-if="list.tabs.length > 10 && !list.showAll">
+                    <v-flex class="text-xs-center">
+                      <v-btn small flat @click="showAll(list.index)"><v-icon>more_horiz</v-icon></v-btn>
+                    </v-flex>
+                  </v-layout>
+                </draggable>
+              </v-list>
+            </v-card>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
 
-<div class="text-xs-center" v-if="pageLength > 1">
-  <v-pagination
-    :value="currentPage"
-    @input="changePage"
-    :length="pageLength"
-    circle
-  ></v-pagination>
-</div>
+        <div class="text-xs-center" v-if="pageLength > 1">
+          <v-pagination
+            :value="currentPage"
+            @input="changePage"
+            :length="pageLength"
+            circle
+          ></v-pagination>
+        </div>
 
-<v-layout v-if="processed && listsToDisplay.length === 0" align-center justify-center column fill-height class="no-list-tip">
-  <h3 class="display-3 grey--text" v-text="__('ui_no_list')"></h3>
-  <p class="display-2 grey--text text--lighten-1" v-html="__('ui_no_list_tip')"></p>
-</v-layout>
+        <v-layout v-if="processed && listsToDisplay.length === 0" align-center justify-center column fill-height class="no-list-tip">
+          <h3 class="display-3 grey--text" v-text="__('ui_no_list')"></h3>
+          <p class="display-2 grey--text text--lighten-1" v-html="__('ui_no_list_tip')"></p>
+        </v-layout>
+      </template>
 
-<context-menu v-model="showMenu" ref="contextMenu" @click="contextMenuClicked"></context-menu>
+      <template v-else>
+        <v-expansion-panel
+          ref="domainPanel" expand popout
+          :value="domainExpandStatus"
+          @input="domainExpandStatus = $event"
+          class="my-3"
+        >
+          <v-expansion-panel-content
+            v-for="group in domainGroups"
+            hide-actions
+            class="domain-group"
+            :key="group.domain"
+          >
+            <v-layout slot="header" row spacer>
+              <v-flex xs10>
+                <strong class="domain-title">{{ group.domain }}</strong>
+                <v-chip label small class="lighten-3 ml-2">{{ group.tabs.length }} {{ __('ui_tab') }}</v-chip>
+              </v-flex>
+            </v-layout>
+            <v-card>
+              <v-list dense class="my-1">
+                <v-list-tile
+                  v-for="item in group.tabs"
+                  :key="item.listIndex + '-' + item.tabIndex"
+                  :href="opts.itemClickAction !== 'none' ? item.tab.url : null"
+                  :target="opts.itemClickAction !== 'none' ? '_blank' : null"
+                  class="list-item"
+                >
+                  <v-list-tile-content>
+                    <v-list-tile-title>
+                      <v-avatar
+                        tile
+                        size="16"
+                        color="grey lighten-4"
+                        v-if="!opts.hideFavicon"
+                      >
+                        <img :src="item.tab.favIconUrl ? item.tab.favIconUrl : `https://www.google.com/s2/favicons?domain=${getDomain(item.tab.url)}`">
+                      </v-avatar>
+                      {{ opts.itemDisplay === 'url' ? item.tab.url : item.tab.title }}
+                    </v-list-tile-title>
+                    <v-list-tile-sub-title v-if="opts.itemDisplay === 'title-and-url'">
+                      {{ item.tab.url }}
+                    </v-list-tile-sub-title>
+                    <v-list-tile-sub-title>
+                      {{ __('ui_list') }}: {{ item.listTitle }} · {{ __('ui_created') }} {{ formatTime(item.listTime) }}
+                    </v-list-tile-sub-title>
+                  </v-list-tile-content>
+                </v-list-tile>
+              </v-list>
+            </v-card>
+          </v-expansion-panel-content>
+        </v-expansion-panel>
 
-<v-fab-transition>
-  <v-btn :key="1" v-if="scrollY > 100" color="pink" dark fab fixed bottom right @click="$vuetify.goTo(0)">
-    <v-icon>keyboard_arrow_up</v-icon>
-  </v-btn>
-  <v-btn :key="2" v-else color="green" dark fab fixed bottom right title="fold all lists" @click="foldAll">
-    <v-icon>subject</v-icon>
-  </v-btn>
-</v-fab-transition>
+        <v-layout v-if="processed && domainGroups.length === 0" align-center justify-center column fill-height class="no-list-tip">
+          <h3 class="display-3 grey--text" v-text="__('ui_no_list')"></h3>
+          <p class="display-2 grey--text text--lighten-1" v-html="__('ui_no_list_tip')"></p>
+        </v-layout>
+      </template>
+    </v-flex>
+    <v-flex xs12 md3>
+      <llm-panel :lists="indexedLists" :domain-groups="domainGroups"></llm-panel>
+    </v-flex>
+  </v-layout>
 
-<v-menu
-  v-model="tag.editing"
-  :close-on-content-click="false"
-  :position-x="tag.x"
-  :position-y="tag.y"
-  absolute
-  offset-y
->
-  <v-combobox
-    autofocus
-    v-model="tag.value"
-    @input="tagChanged"
-    :hide-no-data="!tag.input"
-    :items="Object.keys(taggedList)"
-    :search-input.sync="tag.input"
-    label="Search an existing tag"
-    multiple
-    small-chips
-    solo
-    hide-details
-    dense
+  <context-menu v-model="showMenu" ref="contextMenu" @click="contextMenuClicked"></context-menu>
+
+  <v-fab-transition v-if="!groupByDomain">
+    <v-btn :key="1" v-if="scrollY > 100" color="pink" dark fab fixed bottom right @click="$vuetify.goTo(0)">
+      <v-icon>keyboard_arrow_up</v-icon>
+    </v-btn>
+    <v-btn :key="2" v-else color="green" dark fab fixed bottom right title="fold all lists" @click="foldAll">
+      <v-icon>subject</v-icon>
+    </v-btn>
+  </v-fab-transition>
+
+  <v-menu
+    v-model="tag.editing"
+    :close-on-content-click="false"
+    :position-x="tag.x"
+    :position-y="tag.y"
+    absolute
+    offset-y
   >
-    <template slot="no-data">
-      <v-list-tile>
-        <span class="subheading">Create</span>
-        <v-chip label small>
-          {{ tag.input }}
-        </v-chip>
-      </v-list-tile>
-    </template>
-
-    <template slot="selection" slot-scope="{ item, parent, selected }">
-      <v-chip :selected="selected" :color="getColorByHash(item)" class="lighten-3" label small>
-        <span class="pr-2">{{ item }}</span>
-        <v-icon small @click="parent.selectItem(item)">close</v-icon>
-      </v-chip>
-    </template>
-
-    <!-- <template
-      slot="item"
-      slot-scope="{ index, item, parent }"
+    <v-combobox
+      autofocus
+      v-model="tag.value"
+      @input="tagChanged"
+      :hide-no-data="!tag.input"
+      :items="Object.keys(taggedList)"
+      :search-input.sync="tag.input"
+      label="Search an existing tag"
+      multiple
+      small-chips
+      solo
+      hide-details
+      dense
     >
-      <v-list-tile-content>
-        <v-chip dark label small>{{ item }}</v-chip>
-      </v-list-tile-content>
-    </template> -->
-  </v-combobox>
-</v-menu>
+      <template slot="no-data">
+        <v-list-tile>
+          <span class="subheading">Create</span>
+          <v-chip label small>
+            {{ tag.input }}
+          </v-chip>
+        </v-list-tile>
+      </template>
+
+      <template slot="selection" slot-scope="{ item, parent, selected }">
+        <v-chip :selected="selected" :color="getColorByHash(item)" class="lighten-3" label small>
+          <span class="pr-2">{{ item }}</span>
+          <v-icon small @click="parent.selectItem(item)">close</v-icon>
+        </v-chip>
+      </template>
+
+      <!-- <template
+        slot="item"
+        slot-scope="{ index, item, parent }"
+      >
+        <v-list-tile-content>
+          <v-chip dark label small>{{ item }}</v-chip>
+        </v-list-tile-content>
+      </template> -->
+    </v-combobox>
+  </v-menu>
 
 </div>
 </template>
@@ -270,6 +346,7 @@ import {createNewTabList} from '@/common/list'
 import {formatTime, getColorByHash} from '@/common/utils'
 import dynamicTime from '@/app/component/DynamicTime'
 import contextMenu from '@/app/component/main/detailList/ContextMenu'
+import llmPanel from '@/app/component/main/LLMPanel'
 import {COLORS} from '@/common/constants'
 import {mapState, mapActions, mapMutations, mapGetters} from 'vuex'
 
@@ -282,6 +359,8 @@ export default {
       showMenu: false, // item right click menu
       rightClickedListIndex: null,
       currentHighlightItem: null, // after jump to an item
+      groupByDomain: true,
+      domainExpandStatus: [],
       draggableOptions: {
         group: {
           name: 'g',
@@ -305,6 +384,7 @@ export default {
   watch: {
     // '$route.query.p': 'updateExpandStatus',
     listsToDisplay: 'updateExpandStatus',
+    domainGroups: 'updateDomainExpandStatus',
     // '$route.params.tag': 'setTagInView'
   },
   computed: {
@@ -327,6 +407,26 @@ export default {
     pageLength() {
       return this.getPageLength(this.listsToDisplay.length)
     },
+    domainGroups() {
+      const groups = {}
+      this.indexedLists.forEach(list => {
+        list.tabs.forEach((tab, tabIndex) => {
+          const domain = this.getDomain(tab.url) || this.__('ui_unknown_domain')
+          if (!groups[domain]) groups[domain] = []
+          groups[domain].push({
+            tab,
+            listIndex: list.index,
+            listTitle: list.title || this.__('ui_untitled'),
+            listTime: list.time,
+            tabIndex,
+          })
+        })
+      })
+      return Object.keys(groups).sort().map(domain => ({
+        domain,
+        tabs: groups[domain].sort((a, b) => b.listTime - a.listTime || a.tabIndex - b.tabIndex),
+      }))
+    },
   },
   created() {
     this.init()
@@ -338,6 +438,7 @@ export default {
     draggable,
     dynamicTime,
     contextMenu,
+    llmPanel,
   },
   methods: {
     log: console.log,
@@ -359,6 +460,7 @@ export default {
       // this.setTagInView()
       this.getLists().then(() => {
         this.updateExpandStatus()
+        this.updateDomainExpandStatus()
         if (!this.processed) {
           this.processed = true
           if (this.$route.query.listIndex != null) this.jumpTo(this.$route.query)
@@ -389,6 +491,10 @@ export default {
       } else {
         this.expandStatus = this.getExpandStatus()
       }
+    },
+    async updateDomainExpandStatus() {
+      await this.$nextTick()
+      this.domainExpandStatus = this.domainGroups.map(() => true)
     },
     getDomain(url) {
       try {
@@ -561,6 +667,15 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
+.list-controls {
+  margin-left: 4px;
+}
+.detail-layout {
+  align-items: flex-start;
+}
+.domain-title {
+  font-size: 16px;
+}
 .color-panel {
   width: 136px;
   height: 110px;

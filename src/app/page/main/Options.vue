@@ -74,6 +74,32 @@
             </v-list-tile-action>
           </v-list-tile>
         </v-list>
+
+        <v-subheader>{{ __('ui_llm_options_title') }}</v-subheader>
+
+        <v-list>
+          <v-list-tile>
+            <v-list-tile-content>
+              <v-text-field
+                v-model="llmSettings.apiKey"
+                :label="__('ui_llm_api_key_label')"
+                :type="showApiKey ? 'text' : 'password'"
+                append-icon="visibility"
+                @click:append="showApiKey = !showApiKey"
+                @input="saveLlmSettings"
+              ></v-text-field>
+            </v-list-tile-content>
+          </v-list-tile>
+          <v-list-tile>
+            <v-list-tile-content>
+              <v-text-field
+                v-model="llmSettings.model"
+                :label="__('ui_llm_model_label')"
+                @input="saveLlmSettings"
+              ></v-text-field>
+            </v-list-tile-content>
+          </v-list-tile>
+        </v-list>
       </v-card-text>
     </v-card>
 
@@ -105,6 +131,11 @@ export default {
     return {
       optionsLists: _.groupBy(options.optionsList, 'cate'),
       snackbar: false,
+      showApiKey: false,
+      llmSettings: {
+        apiKey: '',
+        model: 'gpt-4o-mini',
+      },
     }
   },
   computed: {
@@ -117,6 +148,9 @@ export default {
     __,
     formatTime,
     ...mapMutations(['setOption']),
+    async loadLlmSettings() {
+      this.llmSettings = await storage.getLlmSettings()
+    },
     isNew(option) {
       return option.new && currentVersion.startsWith(option.new)
     },
@@ -134,12 +168,17 @@ export default {
       this.setOption({[key]: value})
       this.emitChanges(key, value)
     },
+    saveLlmSettings: _.debounce(async function saveLlmSettings() {
+      await storage.setLlmSettings(this.llmSettings)
+      this.snackbar = true
+    }, 300),
     init() {
       chrome.runtime.onMessage.addListener(msg => {
         if (msg.optionsChangeHandledStatus === 'success') {
           this.snackbar = true
         }
       })
+      this.loadLlmSettings()
     }
   }
 }
