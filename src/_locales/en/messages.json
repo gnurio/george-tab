@@ -185,8 +185,14 @@
   "ui_nightmode": {
     "message": "Night mode"
   },
+  "ui_group_by_domain": {
+    "message": "Group tabs by domain (all lists)"
+  },
   "ui_tab": {
     "message": "tabs"
+  },
+  "ui_unknown_domain": {
+    "message": "Unknown domain"
   },
   "ui_created": {
     "message": "Created"
@@ -442,5 +448,35 @@
   },
   "ui_a_new_list": {
     "message": "(a new list)"
+  },
+  "ui_llm_options_title": {
+    "message": "LLM"
+  },
+  "ui_llm_panel_title": {
+    "message": "Tab assistant"
+  },
+  "ui_llm_panel_desc": {
+    "message": "Ask questions about all saved lists."
+  },
+  "ui_llm_prompt_label": {
+    "message": "Ask about your saved tabs"
+  },
+  "ui_llm_send": {
+    "message": "Send"
+  },
+  "ui_llm_missing_key": {
+    "message": "Add your OpenAI API key in Options to use the assistant."
+  },
+  "ui_llm_model_label": {
+    "message": "OpenAI model"
+  },
+  "ui_llm_api_key_label": {
+    "message": "OpenAI API key"
+  },
+  "ui_llm_open_options": {
+    "message": "Open options"
+  },
+  "ui_llm_empty_response": {
+    "message": "No response returned."
   }
 }
