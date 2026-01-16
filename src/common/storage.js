@@ -25,6 +25,18 @@ const setLists = async lists => {
 const getOptions = () => get('opts')
   .then(({opts}) => opts)
 
+const defaultLlmSettings = {
+  apiKey: '',
+  model: 'gpt-4o-mini',
+}
+
+const getLlmSettings = () => get('llm')
+  .then(({llm}) => Object.assign({}, defaultLlmSettings, llm))
+
+const setLlmSettings = llm => set({
+  llm: Object.assign({}, defaultLlmSettings, llm),
+})
+
 const setOptions = opts => set({
   opts: _.pick(opts, _.keys(options.getDefaultOptions())),
   optsUpdatedAt: Date.now(),
@@ -35,4 +47,6 @@ export default {
   setLists,
   getOptions,
   setOptions,
+  getLlmSettings,
+  setLlmSettings,
 }

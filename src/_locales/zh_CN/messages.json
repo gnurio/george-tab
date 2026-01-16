@@ -185,8 +185,14 @@
   "ui_nightmode": {
     "message": "夜间模式"
   },
+  "ui_group_by_domain": {
+    "message": "按域名分组（全部列表）"
+  },
   "ui_tab": {
     "message": "个标签页"
+  },
+  "ui_unknown_domain": {
+    "message": "未知域名"
   },
   "ui_created": {
     "message": "创建于"
@@ -436,5 +442,35 @@
   },
   "ui_a_new_list": {
     "message": "(一个新列表)"
+  },
+  "ui_llm_options_title": {
+    "message": "LLM"
+  },
+  "ui_llm_panel_title": {
+    "message": "标签助手"
+  },
+  "ui_llm_panel_desc": {
+    "message": "针对全部保存的列表提问。"
+  },
+  "ui_llm_prompt_label": {
+    "message": "询问你的保存标签页"
+  },
+  "ui_llm_send": {
+    "message": "发送"
+  },
+  "ui_llm_missing_key": {
+    "message": "请在设置中添加 OpenAI API Key 以使用助手。"
+  },
+  "ui_llm_model_label": {
+    "message": "OpenAI 模型"
+  },
+  "ui_llm_api_key_label": {
+    "message": "OpenAI API Key"
+  },
+  "ui_llm_open_options": {
+    "message": "打开设置"
+  },
+  "ui_llm_empty_response": {
+    "message": "没有返回内容。"
   }
 }
